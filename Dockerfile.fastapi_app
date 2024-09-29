@@ -1,0 +1,27 @@
+# Use the official Python image
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.10
+
+USER root 
+# Set the working directory
+
+# Update package list and install dependencies
+RUN apt-get update && \
+    apt-get install -y poppler-utils tesseract-ocr && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file into the container
+COPY requirments_parser.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirments_parser.txt
+
+RUN mkdir /resume_parser
+WORKDIR /resume_parser
+# # Copy the FastAPI application code into the container
+# COPY app.py .
+
+# # Expose the port that the FastAPI app will run on
+# EXPOSE 8000
+
+# Command to run the FastAPI app using Uvicorn
+# CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

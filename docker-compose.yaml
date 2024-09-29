@@ -1,0 +1,80 @@
+
+services:
+  # postgres:
+  #   container_name: postgres_container
+  #   image: postgres
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: admin
+  #     POSTGRES_PASSWORD: admin
+  #     POSTGRES_DB: admin
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data  
+  #   ports:
+  #     - "5432:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -d resume_proejct -U root"]
+  #     interval: 3s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - project-network
+
+
+  mongodb:
+    image: mongo:latest # use the latest image.
+    container_name: mongodb
+    environment: # set required env variables to access mongo
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - 27017:27017
+    volumes: # optional to preserve database after container is deleted.
+      - ./database-data:/data/db
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    ports:
+      - "28081:8081"
+    environment:
+      # ME_CONFIG_MONGODB_SERVER: mongo-express
+      ME_CONFIG_BASICAUTH_USERNAME: root
+      ME_CONFIG_BASICAUTH_PASSWORD: root
+      #ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: root
+      ME_CONFIG_MONGODB_URL: mongodb://root:root@mongodb:27017
+
+  resume_parser:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi_app
+    container_name: resume_parser
+    ports:
+      - "8004:8004"
+    networks:
+      - project-network
+    volumes:
+      - /home/melek/Dashbord-streamlit/resume_parser:/resume_parser
+
+
+
+  # pgadmin:
+  #   container_name: pgadmin4_container
+  #   image: dpage/pgadmin4
+  #   restart: always
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
+  #     PGADMIN_DEFAULT_PASSWORD: root
+  #   ports:
+  #     - "5050:80"
+  #   networks:
+  #     - project-network
+
+# volumes:
+#   postgres-data:
+
+networks:
+  project-network:
+    driver: bridge
