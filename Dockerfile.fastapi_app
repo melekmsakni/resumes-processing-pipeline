@@ -16,7 +16,10 @@ COPY requirments_parser.txt .
 RUN pip install --no-cache-dir -r requirments_parser.txt
 
 RUN mkdir /resume_parser
+
 WORKDIR /resume_parser
+
+
 # # Copy the FastAPI application code into the container
 # COPY app.py .
 

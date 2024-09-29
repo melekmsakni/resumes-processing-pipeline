@@ -376,7 +376,6 @@ def process_folder_job(folder_path):
     lm=os.listdir(folder_path)
     for file in stqdm(lm):
         
-        print('abath lih')
         file_path = os.path.join(folder_path, file)
         print(file_path)
 

@@ -56,7 +56,7 @@ services:
     networks:
       - project-network
     volumes:
-      - /home/melek/Dashbord-streamlit/resume_parser:/resume_parser
+      - ./resume_parser:/resume_parser
 
 
 
