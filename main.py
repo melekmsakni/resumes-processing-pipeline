@@ -58,7 +58,7 @@ def main():
     if "job_list" not in st.session_state:
         st.session_state.job_list = initilize_job_list()
 
-    st.sidebar.image("/home/melek/Dashbord-streamlit/sidebarPic.png")
+    st.sidebar.image("./sidebarPic.png")
 
     # 1. as sidebar menu
     with st.sidebar:
