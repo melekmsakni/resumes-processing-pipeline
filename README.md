@@ -21,22 +21,7 @@ The system comprises the following main components, as visualized in the archite
 
 ![image](https://github.com/user-attachments/assets/8c7c7c75-b459-4802-ade5-d5e8e2a27435)
 
-*(Replace `link-to-your-architecture-diagram-image-or-replace-with-instructions-to-view-diagram` above with a direct link to an image of your architecture diagram or instructions to view it).*
 
-**Alternatively, if you cannot easily include an image, describe the diagram visually:**
-
-> The architecture diagram visually represents the data flow as follows:
->
-> 1.  A user interacts with the **Streamlit Webpage** to upload a resume.
-> 2.  The **Streamlit** application, built with **Python**, sends the resume to the **Resume Parser API** (FastAPI, Dockerized).
-> 3.  The **Resume Parser API** communicates with the **OCR Resume Parser** (Dockerized) to extract text from the resume.
-> 4.  The parsed text is then sent back to the **Python Backend**.
-> 5.  The **Python Backend** might store the parsed data in the **MongoDB Database** (Dockerized).
-> 6.  For LLM processing, the **Python Backend** sends the parsed resume text to the **LLM API** (FastAPI, Dockerized), interacting with the **LLama 3.1 LLM** (Dockerized).
-> 7.  The **LLM API** returns the processed information from the LLM back to the **Python Backend** and subsequently to the **Streamlit Webpage** for the user to view.
-> 8.  **Database Monitoring** (Dockerized) is used to observe the **MongoDB Database**.
->
-> All key components (FastAPI APIs, OCR Resume Parser, LLama 3.1, MongoDB, and Database Monitoring) are containerized using Docker and orchestrated by Docker Compose for easy deployment.
 
 ## Getting Started
 
@@ -51,8 +36,8 @@ Follow these steps to set up and run the Resume Parsing and LLM Interaction Syst
 1.  **Clone the Repository:**
 
     ```bash
-    git clone [repository-url]
-    cd [repository-directory]
+    git clone git@github.com:melekmsakni/dashboard_streamlit.git
+    cd dashboard_streamlit
     ```
 
     *(Replace `[repository-url]` with the actual URL of your GitHub repository and `[repository-directory]` with the cloned directory name).*
