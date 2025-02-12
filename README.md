@@ -1,6 +1,5 @@
 # dashboard_streamlit
 
-![image](https://github.com/user-attachments/assets/cb95b1a4-95f6-457f-97b3-a2ffefb514d4)
 
 # Resume Parsing and LLM Interaction System
 
@@ -23,7 +22,7 @@ The system comprises the following main components, as visualized in the archite
 
 ## Architecture Diagram
 
-![Architecture Diagram](link-to-your-architecture-diagram-image-or-replace-with-instructions-to-view-diagram)
+![image](https://github.com/user-attachments/assets/cb95b1a4-95f6-457f-97b3-a2ffefb514d4)
 
 *(Replace `link-to-your-architecture-diagram-image-or-replace-with-instructions-to-view-diagram` above with a direct link to an image of your architecture diagram if you have one online, or provide instructions on how to view the diagram file if it's included in the repository. If you generated the diagram using a tool, you might be able to export it as an image).*
 
@@ -49,7 +48,7 @@ Follow these steps to set up and run the Resume Parsing and LLM Interaction Syst
 ### Prerequisites
 
 *   **Docker and Docker Compose:** Ensure you have Docker and Docker Compose installed on your system. You can download them from [Docker Desktop](https://www.docker.com/products/docker-desktop/).
-*   **Python 3.x:** Python 3.x is required to run the Streamlit frontend and potentially for custom backend scripts if not fully containerized.
+*   **Python 3.10:** Python 3.x is required to run the Streamlit frontend and potentially for custom backend scripts if not fully containerized.
 *   **[Optional] Virtual Environment (venv or conda):**  Recommended for managing Python dependencies.
 
 ### Installation
