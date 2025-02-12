@@ -28,7 +28,7 @@ def Dashboard():
             "n",
         ]
 
-    main_col = st.columns((4.5, 2.5), gap="large")
+    main_col = st.columns((4.5, 2.5), gap="medium")
     with main_col[0]:
         st.markdown(
             """

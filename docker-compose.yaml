@@ -31,7 +31,8 @@ services:
       - 27017:27017
     volumes: # optional to preserve database after container is deleted.
       - ./database-data:/data/db
-
+    networks:
+      - project-network
   mongo-express:
     image: mongo-express
     container_name: mongo-express
@@ -57,6 +58,17 @@ services:
       - project-network
     volumes:
       - ./resume_parser:/resume_parser
+
+  ollama:
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    container_name: ollama
+    ports:
+      - "8006:8006"
+    networks:
+      - project-network
+
 
 
 

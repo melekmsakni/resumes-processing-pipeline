@@ -10,11 +10,153 @@ from time import sleep
 import shutil
 from stqdm import stqdm
 import logging
-
+from ollama import Client
 logging.basicConfig(level=logging.INFO)
 import requests
+import ollama
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("data_processing.log"),  # Log to a file
+        logging.StreamHandler()            # Also log to console
+    ]
+)
 
 logger = logging.getLogger(__name__)
+
+client_server='7869'
+model='llama3.1'
+
+
+def experience_score(cv, job_desc):
+
+    if job_desc["total_years_of_work_experience"] != "":
+        experience_required = job_desc["total_years_of_work_experience"]["field"]
+    else:
+        return 0
+
+    if (
+        "total_years_of_work_experience" not in cv
+        or cv["total_years_of_work_experience"] is None
+    ):
+        cv_experience = 0  # or any default value you prefer
+    else:
+        cv_experience = float(cv["total_years_of_work_experience"])
+
+    if cv_experience >= experience_required:
+        experience_score = job_desc["total_years_of_work_experience"]["weight"]
+    else:
+        experience_score = (
+            cv_experience * job_desc["total_years_of_work_experience"]["weight"]
+        ) / experience_required
+    return experience_score
+
+def skills_score(cv, job_desc):
+
+    if "skills" not in cv or job_desc["skills"] != "":
+        job_skills = job_desc["skills"]["field"]
+    else:
+        return 0
+
+    if len(cv["skills"])==0 :
+        return 0
+    else:
+        cv_skills = cv["skills"]
+
+    cv_skills = [x.lower() for x in cv_skills]
+    job_skills = [x.lower() for x in job_skills]
+
+    absent_skills = set(job_skills) - set(cv_skills)
+
+    if len(list(absent_skills)) <= 0:
+        skills_score = job_desc["skills"]["weight"]
+    else:
+        number_prsent_skils = len(job_skills) - len(list(absent_skills))
+        skills_score = (number_prsent_skils * job_desc["skills"]["weight"]) / len(
+            job_skills
+        )
+
+    return skills_score
+
+def education_score(cv, job_desc):
+    education_score = 0
+    if job_desc["education"] != "":
+        job_university = job_desc["education"]["field"]
+    else:
+        return education_score
+
+    cv_education = cv.get("education", "")
+    cv_universities = []
+    if len(cv_education)==0:
+        return education_score
+    
+    for i in cv_education:
+        if i["degree"] is not None:
+            cv_universities.append(i["degree"])
+
+    cv_universities = [x.lower() for x in cv_universities]
+    job_university = job_university.lower()
+
+    
+    for degree in cv_universities:
+        if job_university in degree:
+            education_score = job_desc["education"]["weight"]
+            break
+    return education_score
+
+def languages_score(cv, job_desc):
+
+    if job_desc["languages"] != "":
+        job_languages = job_desc["languages"]["field"]
+    else:
+        return 0
+
+    if "languages" not in cv or len(cv["languages"]) ==0:
+        return 0
+    else:
+        cv_languages = cv["languages"]
+
+    cv_languages = [x.lower() for x in cv_languages]
+    job_languages = [x.lower() for x in job_languages]
+
+    languages_found = 0
+    for j in job_languages:
+        for l in cv_languages:
+            if j in l:
+                languages_found = languages_found + 1
+
+    if languages_found == len(job_languages):
+        languages_score = job_desc["languages"]["weight"]
+
+    else:
+        languages_score = (languages_found * job_desc["languages"]["weight"]) / len(
+            job_languages
+        )
+
+    return languages_score
+
+def gap_years_score(cv, job_desc):
+
+    if job_desc["gap_years"] != "":
+        gap_years_job = job_desc["gap_years"]["field"]
+    else:
+        return 0
+
+    if "gap_years" not in cv or cv["gap_years"] is None:
+        gap_years = 0
+    else:
+        gap_years = float(cv["gap_years"])
+
+    gap_years_score = 0
+    if gap_years <= gap_years_job:
+        gap_years_score = job_desc["gap_years"]["weight"]
+
+    return gap_years_score
+
+def specific_score_ploting(field,score,job):
+    return  score/job[field]["weight"] if job[field]["weight"] !=0 else 0
 
 
 def upadate_ui_states(state_name, value):
@@ -25,161 +167,19 @@ def upadate_ui_states(state_name, value):
             st.session_state[state_name] = [value]
 
 
-def calculate_score(job_data):
+def calculate_score_job(job_data):
     job, job_id = job_data
 
-    def get_weights(dic):
-        weighted_dic = {}
-        total_score = 0
-        # get totalscore
-        for key in dic:
-            if key == "_id":
-
-                continue
-            total_score = total_score + dic[key]["score"]
-        for key in dic:
-            if key == "_id":
-
-                continue
-            weight = dic[key]["score"] / total_score if total_score > 0 else 0
-            weighted_dic[key] = {"field": dic[key]["field"], "weight": weight}
-        return weighted_dic
-
-    def experience_score(cv, job_desc):
-
-        if job_desc["total_years_of_work_experience"] != "":
-            experience_required = job_desc["total_years_of_work_experience"]["field"]
-        else:
-            return 0
-
-        if (
-            "total_years_of_work_experience" not in cv
-            or cv["total_years_of_work_experience"] is None
-        ):
-            cv_experience = 0  # or any default value you prefer
-        else:
-            cv_experience = float(cv["total_years_of_work_experience"])
-
-        if cv_experience >= experience_required:
-            experience_score = job_desc["total_years_of_work_experience"]["weight"]
-        else:
-            experience_score = (
-                cv_experience * job_desc["total_years_of_work_experience"]["weight"]
-            ) / experience_required
-        return experience_score
-
-    def skills_score(cv, job_desc):
-
-        if "skills" not in cv or job_desc["skills"] != "":
-            job_skills = job_desc["skills"]["field"]
-        else:
-            return 0
-
-        if cv["skills"] is []:
-            return 0
-        else:
-            cv_skills = cv["skills"]
-
-        cv_skills = [x.lower() for x in cv_skills]
-        job_skills = [x.lower() for x in job_skills]
-
-        absent_skills = set(job_skills) - set(cv_skills)
-
-        if len(list(absent_skills)) <= 0:
-            skills_score = job_desc["skills"]["weight"]
-        else:
-            number_prsent_skils = len(job_skills) - len(list(absent_skills))
-            skills_score = (number_prsent_skils * job_desc["skills"]["weight"]) / len(
-                job_skills
-            )
-
-        return skills_score
-
-    def education_score(cv, job_desc):
-
-        if job_desc["degree"] != "":
-            job_university = job_desc["degree"]["field"]
-        else:
-            return 0
-
-        cv_education = cv.get("education", "")
-        cv_universities = []
-        for i in cv_education:
-            cv_universities.append(i["degree"])
-
-        cv_universities = [x.lower() for x in cv_universities]
-        job_university = job_university.lower()
-
-        education_score = 0
-        for degree in cv_universities:
-            if job_university in degree:
-                education_score = job_desc["degree"]["weight"]
-                break
-        return education_score
-
-    def languages_score(cv, job_desc):
-
-        if job_desc["languages"] != "":
-            job_languages = job_desc["languages"]["field"]
-        else:
-            return 0
-
-        if "languages" not in cv or cv["languages"] is None:
-            cv_languages = []
-        else:
-            cv_languages = cv["languages"]
-
-        cv_languages = [x.lower() for x in cv_languages]
-        job_languages = [x.lower() for x in job_languages]
-
-        languages_found = 0
-        for j in job_languages:
-            for l in cv_languages:
-                if j in l:
-                    languages_found = languages_found + 1
-
-        if languages_found == len(job_languages):
-            languages_score = job_desc["languages"]["weight"]
-
-        else:
-            languages_score = (languages_found * job_desc["languages"]["weight"]) / len(
-                job_languages
-            )
-
-        return languages_score
-
-    def gap_years_score(cv, job_desc):
-
-        if job_desc["gap_years"] != "":
-            gap_years_job = job_desc["gap_years"]["field"]
-        else:
-            return 0
-
-        if "gap_years" not in cv or cv["gap_years"] is None:
-            gap_years = 0
-        else:
-            gap_years = float(cv["gap_years"])
-
-        gap_years_score = 0
-        if gap_years <= gap_years_job:
-            gap_years_score = job_desc["gap_years"]["weight"]
-
-        return gap_years_score
-
     resume_list = fetch_all("resumes")
-    # print(job)
-    job_desc_weights = get_weights(job)
 
-    def specific_score_ploting(field,score):
-        return  score/job_desc_weights[field]["weight"] if job_desc_weights[field]["weight"] !=0 else 0
     
     for resume in resume_list:
 
-        exp_score = experience_score(resume, job_desc_weights)
-        skills_score_value = skills_score(resume, job_desc_weights)
-        edu_score = education_score(resume, job_desc_weights)
-        lang_score = languages_score(resume, job_desc_weights)
-        gap_year_score = gap_years_score(resume, job_desc_weights)
+        exp_score = experience_score(resume, job)
+        skills_score_value = skills_score(resume, job)
+        edu_score = education_score(resume, job)
+        lang_score = languages_score(resume, job)
+        gap_year_score = gap_years_score(resume, job)
 
         # Calculate total score
         total_score = (
@@ -193,11 +193,11 @@ def calculate_score(job_data):
             "resume_id": resume["_id"],  # Assuming resume has an "_id" field
             "total_score": total_score * 100,  # Convert to percentage
             "specific_scores": {
-                "total_years_of_work_experience": specific_score_ploting("total_years_of_work_experience",exp_score),
-                "skills": specific_score_ploting("skills",skills_score_value),
-                "degree": specific_score_ploting("degree",edu_score),
-                "languages": specific_score_ploting("languages",lang_score),
-                "gap_years": specific_score_ploting("gap_years",gap_year_score),
+                "total_years_of_work_experience": specific_score_ploting("total_years_of_work_experience",exp_score,job),
+                "skills": specific_score_ploting("skills",skills_score_value,job),
+                "education": specific_score_ploting("education",edu_score,job),
+                "languages": specific_score_ploting("languages",lang_score,job),
+                "gap_years": specific_score_ploting("gap_years",gap_year_score,job),
             },
         }
         insert_document("scoring", scoring_doc)
@@ -217,7 +217,7 @@ def get_top_candidates(job):
 
     resume_scores = fetch_all("scoring", {"job_title": job})
     best_scores = sorted(resume_scores, key=lambda x: x["total_score"], reverse=True)[
-        :10
+        :1000
     ]
 
     data = {
@@ -234,6 +234,10 @@ def get_top_candidates(job):
 
     for score in best_scores:
         resume_info = fetch_one("resumes", {"_id": score["resume_id"]})
+
+        if resume_info is None:
+            logging.error(f"Resume with ID {score['resume_id']} not found.")
+            continue
 
         data["Name"].append(resume_info["name"])
         data["Email"].append(resume_info["email"])
@@ -289,6 +293,23 @@ def adding_job_form(skills,job_title,main_col):
 
     submit_button = st.form_submit_button(label="ADD JOB", use_container_width=True)
 
+    def get_weights(dic):
+        weighted_dic = {}
+        total_score = 0
+        # get totalscore
+        for key in dic:
+            if key == "_id":
+
+                continue
+            total_score = total_score + dic[key]["score"]
+        for key in dic:
+            if key == "_id":
+
+                continue
+            weight = dic[key]["score"] / total_score if total_score > 0 else 0
+            weighted_dic[key] = {"field": dic[key]["field"], "weight": weight,"score":dic[key]["score"]}
+        return weighted_dic
+    
     if submit_button:
         if  job_title == "":
             st.markdown(
@@ -309,7 +330,7 @@ def adding_job_form(skills,job_title,main_col):
         
         new_job = {
             "job_title": {"field": job_title, "score": 0},
-            "degree": {
+            "education": {
                 "field": degree,
                 "score": degree_dcore,
             },
@@ -330,15 +351,16 @@ def adding_job_form(skills,job_title,main_col):
                 "score": languages_score,
             },
         }
+        new_job_weight=get_weights(new_job)
 
-        job_id = insert_document("jobs", new_job)
+        job_id = insert_document("jobs",new_job_weight )
 
         upadate_ui_states("job_list", job_title)
         st.write("Job added and saved successfully!")
 
         # calculating score
-        job_data = new_job, job_id.inserted_id
-        calculate_score(job_data)
+        job_data = new_job_weight, job_id.inserted_id
+        calculate_score_job(job_data)
 
 
 def post_process_upload_resues_ZIP(uploaded_folder):
@@ -369,22 +391,101 @@ def post_process_upload_resues_ZIP(uploaded_folder):
 
     process_folder_job(resumes_extracted_folder_last)
 
+def check_LLM_model_existing(model,port):
+    
+    OLLAMA_SERVER=f'http://localhost:7869'
+    CLIENT = Client(host=OLLAMA_SERVER)
+
+    try:
+        CLIENT.show(model)
+        return 'models exist'
+    except ollama.ResponseError as e:
+        logger.error('Error: could not find the requested model locally')
+        if e.status_code == 404:
+            logger.info(f'pulling {model} from ollama')
+            try:
+                CLIENT.pull(model)
+                return 'model pulled'
+            except Exception as e :
+                logger.error("couldn't find the model in ollama try another one ")
+                return 
+    
+
+def calculate_score_candidate(resume,resume_id):
+    job_list = fetch_all("jobs")
+
+    for job in job_list:
+
+        exp_score = experience_score(resume, job)
+        skills_score_value = skills_score(resume, job)
+        edu_score = education_score(resume, job)
+        lang_score = languages_score(resume, job)
+        gap_year_score = gap_years_score(resume, job)
+
+        # Calculate total score
+        total_score = (
+            exp_score + skills_score_value + edu_score + lang_score + gap_year_score
+        )
+
+            
+        scoring_doc = {
+            "job_id": job["_id"],
+            "job_title": job["job_title"]["field"],
+            "resume_id": resume_id,  
+            "total_score": total_score * 100,  
+            "specific_scores": {
+                "total_years_of_work_experience": specific_score_ploting("total_years_of_work_experience",exp_score,job),
+                "skills": specific_score_ploting("skills",skills_score_value,job),
+                "education": specific_score_ploting("education",edu_score,job),
+                "languages": specific_score_ploting("languages",lang_score,job),
+                "gap_years": specific_score_ploting("gap_years",gap_year_score,job),
+            },
+        }
+        insert_document("scoring", scoring_doc)
+
+
 
 def process_folder_job(folder_path):
     url = "http://localhost:8004/upload_resume/"
 
+
+
+    check=check_LLM_model_existing(model,client_server)
+
+    if check==None :
+        st.warning('model dosent exist fix it ', icon="⚠️")
+        return
+
     lm=os.listdir(folder_path)
+
+    
+    
+
     for file in stqdm(lm):
         
         file_path = os.path.join(folder_path, file)
-        print(file_path)
+        
 
         with open(file_path, "rb") as file:
-            files = {"file": file}
-            response = requests.post(url, files=files)
+            params = {"file": file,'model':model,'port':client_server}
+            resume_json = requests.post(url, files=params)
 
-    # Print the response from the server
-        print(response.json())
+        if resume_json is None :
+            logging.error(f"llama None value returned {file_path}")
+            continue
+                
+        resume_dic=resume_json.json()['json_resume']
+
+        if resume_dic is  None :
+            continue
+
+        resume_dic["pdf_resume"] = file_path
+        
+        id=insert_document('resumes',resume_dic)
+        
+        calculate_score_candidate(resume_dic,id.inserted_id)
+        
+            
 
 
 def get_jobs_list():
@@ -477,6 +578,10 @@ def make_donut(input_response, input_text, input_color):
 
 
 def display_resume_pdf(file):
+    from pathlib import Path
+    if not Path(file).exists():
+        st.write("resume not found ")
+        return
 
     with open(file, "rb") as f:
         base64_pdf = base64.b64encode(f.read()).decode("utf-8")
@@ -496,3 +601,4 @@ def initilize_job_list():
         jobs.append(job["job_title"]["field"])
 
     return jobs
+

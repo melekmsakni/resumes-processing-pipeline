@@ -15,7 +15,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 import logging
 import mimetypes
-
+from LLAMA import *
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 parser = FastAPI()
 
 output_folder = "temp_text"
+
+
+
+# i have to chek if model exist else pull it from the ollama 
 
 def is_pdf_image_based(pdf_path):
     try:
@@ -125,21 +129,58 @@ def extract_text_resume(file_path):
         return 
 
 
-def parse_resume(file_path):
+def parse_resume(file_path,model,port):
+#     d= {
+#   "name": "Anas Ben Abdallah",
+#   "email": "benabdallah.anas2000@gmail.com",
+#   "location": "Tunisie",
+#   "phone": "+216 95200829",
+#   "title": "Candidature pour un stage PFE | Ingénieur En Informatique",
+#   "work_experience": [
+#     {
+#       "title": "Stage d'été : Analyse de logs",
+#       "duration": 2
+#     },
+#     {
+#       "title": "Stage d'été : Site de films",
+#       "duration": 2
+#     }
+#   ],
+#   "total_years_of_work_experience": 0.3,
+#   "skills": ["mongodb", "react", "nodejs", "spring boot", "docker"],
+#   "languages": ["french", "english", "arabic"],
+#   "gap_years": 0.25,
+#   "education": [{
+#     "institution": 'higher institut of science',
+#     "degree": 'bachelor in computer science'
+#   }],
+#   "certifications": [
+#     "aws cloud practitioner",
+#     "azure pl900"
+#   ]
+# }
+
+#     return d
     try:
         text = extract_text_resume(file_path)
         if text is None :
-            logging.error("text unavailable ")
+            logging.error(f" {file_path}  problem while extracting text from cv ")
             return
+        
         with open(f'{output_folder}/{os.path.basename(file_path)}.txt', "w", encoding="utf-8") as f:
             f.write(text)
-        return generate_from_text(text)
+
+
+        return LLM_text_to_json(file_path,text,model,port)
+
+    
     except Exception as e:
         logging.error(f"Error parsing file {file_path}: {e}")
+        return
 
-def generate_from_text(raw_text):
-    # it will return json 
-    return {'json':'content'}
+
+
+
 
 
 # def resume_to_text(files_list):
@@ -156,7 +197,7 @@ def generate_from_text(raw_text):
 #     return output_folder 
 
 @parser.post("/upload_resume/")
-async def upload_resume(file: UploadFile = File(...)):
+async def upload_resume(file: UploadFile = File(...), model: str = "llama3.1", port: str = "11434"):
     """Endpoint to upload a resume and convert it to text."""
     os.makedirs(output_folder, exist_ok=True)
 
@@ -164,7 +205,7 @@ async def upload_resume(file: UploadFile = File(...)):
     with open(file_path, "wb") as f:
         f.write(await file.read())
     
-    json_resume = parse_resume(file_path)  # Process the file
+    json_resume = parse_resume(file_path,model,port)  # Process the file
     if json_resume is None :
         logger.error(f"could not process the file {file_path} ") 
     return JSONResponse(content={"message": "File processed successfully", "json_resume": json_resume})
