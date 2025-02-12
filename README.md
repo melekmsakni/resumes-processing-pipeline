@@ -80,16 +80,9 @@ Follow these steps to set up and run the Resume Parsing and LLM Interaction Syst
 *   **Frontend:** Streamlit (Python)
 *   **Backend (Core Logic):** Python
 *   **API Framework:** FastAPI (Python)
-*   **Large Language Model (LLM):** Llama 3.1 (Meta)
+*   **Large Language Model (LLM):** Llama 3.1 (Meta) with oolama
 *   **OCR:** [Specify the OCR library or service used if known]
 *   **Database:** MongoDB
 *   **Containerization & Orchestration:** Docker Compose
 
-## License
 
-[Specify the License for your project, e.g., MIT License, Apache 2.0, GPL, or "No License"]
-
-## Contact
-
-[Your Name/Team Name]
-[Your Email or Contact Information (Optional)]
