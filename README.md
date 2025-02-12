@@ -1,4 +1,4 @@
-# Resume Parsing and LLM Interaction System
+# Resume Parsing System
 
 ## Overview
 
@@ -55,7 +55,7 @@ Follow these steps to set up and run the Resume Parsing and LLM Interaction Syst
     Navigate to the repository root directory (where `docker-compose.yml` is located) and run:
 
     ```bash
-    docker-compose up --build
+    sudo docker-compose up --build
     ```
 
     This command will build all Docker images (if necessary) and start all services defined in your `docker-compose.yml` file. This single command sets up and runs the entire application stack.
